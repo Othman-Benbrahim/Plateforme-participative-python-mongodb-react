@@ -58,6 +58,52 @@ const NewIdea = () => {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Check file types and sizes
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    for (const file of files) {
+      if (!validTypes.includes(file.type)) {
+        toast.error(`${file.name}: Type de fichier non supporté. Utilisez PNG, JPG ou PDF.`);
+        continue;
+      }
+      if (file.size > maxSize) {
+        toast.error(`${file.name}: Fichier trop volumineux (max 10MB)`);
+        continue;
+      }
+
+      setUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const token = localStorage.getItem('token');
+        const response = await axios.post(`${API}/upload`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        setAttachments([...attachments, response.data]);
+        toast.success(`${file.name} téléchargé avec succès`);
+      } catch (error) {
+        console.error('Upload failed:', error);
+        toast.error(`Erreur lors du téléchargement de ${file.name}`);
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
+  const removeAttachment = (attachmentId) => {
+    setAttachments(attachments.filter(a => a.id !== attachmentId));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
