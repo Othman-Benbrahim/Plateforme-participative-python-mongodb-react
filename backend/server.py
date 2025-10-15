@@ -430,6 +430,69 @@ async def get_idea(idea_id: str):
         raise HTTPException(status_code=404, detail="Idea not found")
     return Idea(**idea)
 
+@api_router.put("/ideas/{idea_id}", response_model=Idea)
+async def update_idea(idea_id: str, update_data: IdeaUpdate, current_user: User = Depends(get_current_user)):
+    idea = await db.ideas.find_one({"id": idea_id}, {"_id": 0})
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    
+    # Only author, moderator or admin can update
+    if idea["author_id"] != current_user.id and current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to update this idea")
+    
+    # Only moderator/admin can change status
+    update_dict = {}
+    if update_data.title is not None:
+        update_dict["title"] = update_data.title
+    if update_data.description is not None:
+        update_dict["description"] = update_data.description
+    if update_data.tags is not None:
+        update_dict["tags"] = update_data.tags
+    if update_data.category_id is not None:
+        category = await db.categories.find_one({"id": update_data.category_id}, {"_id": 0})
+        if category:
+            update_dict["category_id"] = update_data.category_id
+            update_dict["category_name"] = category["name"]
+    
+    if update_data.status is not None:
+        if current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+            raise HTTPException(status_code=403, detail="Only moderators can change status")
+        update_dict["status"] = update_data.status.value
+        
+        # Notify author of status change
+        if idea["author_id"] != current_user.id:
+            notification = Notification(
+                user_id=idea["author_id"],
+                type="status_change",
+                title="Statut de votre proposition modifié",
+                message=f"Le statut de votre proposition '{idea['title']}' a été changé en '{update_data.status.value}'",
+                link=f"/ideas/{idea_id}"
+            )
+            await db.notifications.insert_one(notification.model_dump())
+    
+    if update_dict:
+        update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.ideas.update_one({"id": idea_id}, {"$set": update_dict})
+    
+    updated_idea = await db.ideas.find_one({"id": idea_id}, {"_id": 0})
+    return Idea(**updated_idea)
+
+@api_router.delete("/ideas/{idea_id}")
+async def delete_idea(idea_id: str, current_user: User = Depends(get_current_user)):
+    idea = await db.ideas.find_one({"id": idea_id}, {"_id": 0})
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    
+    # Only author, moderator or admin can delete
+    if idea["author_id"] != current_user.id and current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this idea")
+    
+    # Delete idea and related comments
+    await db.ideas.delete_one({"id": idea_id})
+    await db.comments.delete_many({"idea_id": idea_id})
+    
+    return {"success": True}
+
 @api_router.post("/ideas/{idea_id}/vote")
 async def vote_idea(idea_id: str, vote: VoteAction, current_user: User = Depends(get_current_user)):
     idea = await db.ideas.find_one({"id": idea_id}, {"_id": 0})
