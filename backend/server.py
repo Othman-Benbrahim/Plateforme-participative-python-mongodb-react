@@ -396,7 +396,7 @@ async def create_idea(idea_data: IdeaCreate, current_user: User = Depends(get_cu
 @api_router.get("/ideas", response_model=List[Idea])
 async def get_ideas(sort: Optional[str] = "recent", search: Optional[str] = None, 
                    tag: Optional[str] = None, category_id: Optional[str] = None,
-                   status: Optional[IdeaStatus] = None):
+                   idea_status: Optional[IdeaStatus] = None):
     query = {}
     if search:
         query["$or"] = [
