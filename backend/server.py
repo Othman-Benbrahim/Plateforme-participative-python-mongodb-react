@@ -332,15 +332,65 @@ async def login(credentials: UserLogin):
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+# Category Routes
+@api_router.post("/categories", response_model=Category)
+async def create_category(category: Category, admin: User = Depends(get_current_admin)):
+    await db.categories.insert_one(category.model_dump())
+    return category
+
+@api_router.get("/categories", response_model=List[Category])
+async def get_categories():
+    categories = await db.categories.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+    return categories
+
+@api_router.put("/categories/{category_id}", response_model=Category)
+async def update_category(category_id: str, name: str, description: Optional[str] = None, 
+                         icon: Optional[str] = None, color: Optional[str] = None,
+                         admin: User = Depends(get_current_admin)):
+    category = await db.categories.find_one({"id": category_id}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    update_data = {"name": name}
+    if description is not None:
+        update_data["description"] = description
+    if icon is not None:
+        update_data["icon"] = icon
+    if color is not None:
+        update_data["color"] = color
+    
+    await db.categories.update_one({"id": category_id}, {"$set": update_data})
+    updated_category = await db.categories.find_one({"id": category_id}, {"_id": 0})
+    return Category(**updated_category)
+
+@api_router.delete("/categories/{category_id}")
+async def delete_category(category_id: str, admin: User = Depends(get_current_admin)):
+    result = await db.categories.delete_one({"id": category_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"success": True}
+
 # Ideas Routes
 @api_router.post("/ideas", response_model=Idea)
 async def create_idea(idea_data: IdeaCreate, current_user: User = Depends(get_current_user)):
+    # Get category name if category_id provided
+    category_name = None
+    if idea_data.category_id:
+        category = await db.categories.find_one({"id": idea_data.category_id}, {"_id": 0})
+        if category:
+            category_name = category["name"]
+    
     idea = Idea(
         **idea_data.model_dump(),
         author_id=current_user.id,
-        author_name=current_user.name
+        author_name=current_user.name,
+        category_name=category_name
     )
     await db.ideas.insert_one(idea.model_dump())
+    
+    # Award badge for creating ideas
+    await check_and_award_badges(current_user.id)
+    
     return idea
 
 @api_router.get("/ideas", response_model=List[Idea])
