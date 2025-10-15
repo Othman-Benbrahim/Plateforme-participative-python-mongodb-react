@@ -34,12 +34,43 @@ ALGORITHM = "HS256"
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# Upload directory
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Enums
+class UserRole(str, Enum):
+    USER = "user"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
+
+class IdeaStatus(str, Enum):
+    DISCUSSION = "discussion"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    IN_PROGRESS = "in_progress"
+
+class ReportStatus(str, Enum):
+    PENDING = "pending"
+    REVIEWED = "reviewed"
+    RESOLVED = "resolved"
+
+class BadgeType(str, Enum):
+    CONTRIBUTOR = "contributor"
+    ACTIVE_VOTER = "active_voter"
+    IDEA_CREATOR = "idea_creator"
+    TOP_CONTRIBUTOR = "top_contributor"
+    COMMUNITY_LEADER = "community_leader"
+
 # Models
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: EmailStr
     name: str
+    role: UserRole = UserRole.USER
+    is_banned: bool = False
+    badges: List[str] = []
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class UserCreate(BaseModel):
