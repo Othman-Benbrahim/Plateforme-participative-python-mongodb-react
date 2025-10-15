@@ -303,9 +303,12 @@ async def register(user_data: UserCreate):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Create user
+    # Create user - first user becomes admin
+    users_count = await db.users.count_documents({})
+    user_role = UserRole.ADMIN if users_count == 0 else UserRole.USER
+    
     hashed_password = get_password_hash(user_data.password)
-    user = User(email=user_data.email, name=user_data.name)
+    user = User(email=user_data.email, name=user_data.name, role=user_role)
     user_dict = user.model_dump()
     user_dict["password"] = hashed_password
     
