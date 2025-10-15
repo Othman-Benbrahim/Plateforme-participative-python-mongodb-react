@@ -66,8 +66,11 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const isAdmin = () => user?.role === 'admin';
+  const isModerator = () => user?.role === 'moderator' || user?.role === 'admin';
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, isAdmin, isModerator }}>
       {children}
     </AuthContext.Provider>
   );
