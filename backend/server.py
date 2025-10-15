@@ -585,6 +585,347 @@ async def get_comments(idea_id: str):
     comments = await db.comments.find({"idea_id": idea_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return comments
 
+@api_router.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: str, current_user: User = Depends(get_current_user)):
+    comment = await db.comments.find_one({"id": comment_id}, {"_id": 0})
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    
+    # Only author, moderator or admin can delete
+    if comment["user_id"] != current_user.id and current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+    
+    await db.comments.delete_one({"id": comment_id})
+    await db.ideas.update_one(
+        {"id": comment["idea_id"]},
+        {"$inc": {"comments_count": -1}}
+    )
+    
+    return {"success": True}
+
+# Report Routes
+@api_router.post("/reports", response_model=Report)
+async def create_report(report_data: ReportCreate, current_user: User = Depends(get_current_user)):
+    # Verify content exists
+    if report_data.content_type == "idea":
+        content = await db.ideas.find_one({"id": report_data.content_id}, {"_id": 0})
+        if content:
+            await db.ideas.update_one({"id": report_data.content_id}, {"$set": {"is_reported": True}})
+    elif report_data.content_type == "comment":
+        content = await db.comments.find_one({"id": report_data.content_id}, {"_id": 0})
+    else:
+        raise HTTPException(status_code=400, detail="Invalid content type")
+    
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    
+    report = Report(
+        **report_data.model_dump(),
+        reporter_id=current_user.id,
+        reporter_name=current_user.name
+    )
+    await db.reports.insert_one(report.model_dump())
+    return report
+
+@api_router.get("/reports", response_model=List[Report])
+async def get_reports(status: Optional[ReportStatus] = None, moderator: User = Depends(get_current_moderator)):
+    query = {}
+    if status:
+        query["status"] = status.value
+    
+    reports = await db.reports.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return reports
+
+@api_router.put("/reports/{report_id}")
+async def resolve_report(report_id: str, resolution: str, action: Optional[str] = None, 
+                        moderator: User = Depends(get_current_moderator)):
+    report = await db.reports.find_one({"id": report_id}, {"_id": 0})
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Handle action (delete content, warn user, etc.)
+    if action == "delete_content":
+        if report["content_type"] == "idea":
+            await db.ideas.delete_one({"id": report["content_id"]})
+        elif report["content_type"] == "comment":
+            comment = await db.comments.find_one({"id": report["content_id"]}, {"_id": 0})
+            if comment:
+                await db.comments.delete_one({"id": report["content_id"]})
+                await db.ideas.update_one(
+                    {"id": comment["idea_id"]},
+                    {"$inc": {"comments_count": -1}}
+                )
+    
+    # Update report
+    await db.reports.update_one(
+        {"id": report_id},
+        {"$set": {
+            "status": ReportStatus.RESOLVED.value,
+            "resolution": resolution,
+            "reviewed_by": moderator.id,
+            "reviewed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"success": True}
+
+# Notification Routes
+@api_router.get("/notifications", response_model=List[Notification])
+async def get_notifications(current_user: User = Depends(get_current_user)):
+    notifications = await db.notifications.find(
+        {"user_id": current_user.id}, 
+        {"_id": 0}
+    ).sort("created_at", -1).limit(50).to_list(50)
+    return notifications
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, current_user: User = Depends(get_current_user)):
+    notification = await db.notifications.find_one({"id": notification_id, "user_id": current_user.id}, {"_id": 0})
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    await db.notifications.update_one(
+        {"id": notification_id},
+        {"$set": {"is_read": True}}
+    )
+    return {"success": True}
+
+@api_router.put("/notifications/read-all")
+async def mark_all_notifications_read(current_user: User = Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": current_user.id, "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"success": True}
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_count(current_user: User = Depends(get_current_user)):
+    count = await db.notifications.count_documents({"user_id": current_user.id, "is_read": False})
+    return {"count": count}
+
+# Poll Routes
+@api_router.post("/polls", response_model=Poll)
+async def create_poll(poll_data: PollCreate, current_user: User = Depends(get_current_user)):
+    # Initialize votes dict with 0 for each option
+    votes = {option: 0 for option in poll_data.options}
+    
+    poll = Poll(
+        **poll_data.model_dump(),
+        author_id=current_user.id,
+        author_name=current_user.name,
+        votes=votes
+    )
+    await db.polls.insert_one(poll.model_dump())
+    return poll
+
+@api_router.get("/polls", response_model=List[Poll])
+async def get_polls(category_id: Optional[str] = None):
+    query = {}
+    if category_id:
+        query["category_id"] = category_id
+    
+    polls = await db.polls.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return polls
+
+@api_router.get("/polls/{poll_id}", response_model=Poll)
+async def get_poll(poll_id: str):
+    poll = await db.polls.find_one({"id": poll_id}, {"_id": 0})
+    if not poll:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    return Poll(**poll)
+
+@api_router.post("/polls/{poll_id}/vote")
+async def vote_poll(poll_id: str, vote: PollVote, current_user: User = Depends(get_current_user)):
+    poll = await db.polls.find_one({"id": poll_id}, {"_id": 0})
+    if not poll:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    
+    # Check if option is valid
+    if vote.option not in poll["options"]:
+        raise HTTPException(status_code=400, detail="Invalid option")
+    
+    # Check if poll has ended
+    if poll.get("ends_at"):
+        ends_at = datetime.fromisoformat(poll["ends_at"])
+        if datetime.now(timezone.utc) > ends_at:
+            raise HTTPException(status_code=400, detail="Poll has ended")
+    
+    user_votes = poll.get("user_votes", {})
+    votes = poll.get("votes", {})
+    
+    # Remove previous vote if exists
+    previous_vote = user_votes.get(current_user.id)
+    if previous_vote:
+        votes[previous_vote] = votes.get(previous_vote, 1) - 1
+    
+    # Add new vote
+    user_votes[current_user.id] = vote.option
+    votes[vote.option] = votes.get(vote.option, 0) + 1
+    
+    await db.polls.update_one(
+        {"id": poll_id},
+        {"$set": {
+            "votes": votes,
+            "user_votes": user_votes
+        }}
+    )
+    
+    return {"success": True, "votes": votes}
+
+@api_router.delete("/polls/{poll_id}")
+async def delete_poll(poll_id: str, current_user: User = Depends(get_current_user)):
+    poll = await db.polls.find_one({"id": poll_id}, {"_id": 0})
+    if not poll:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    
+    # Only author, moderator or admin can delete
+    if poll["author_id"] != current_user.id and current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this poll")
+    
+    await db.polls.delete_one({"id": poll_id})
+    return {"success": True}
+
+# File Upload Routes
+@api_router.post("/upload")
+async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="File type not allowed")
+    
+    # Validate file size (max 10MB)
+    file_size = 0
+    content = await file.read()
+    file_size = len(content)
+    if file_size > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 10MB)")
+    
+    # Generate unique filename
+    file_ext = Path(file.filename).suffix
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Create attachment record
+    attachment = Attachment(
+        filename=unique_filename,
+        original_filename=file.filename,
+        file_type=file.content_type,
+        file_size=file_size,
+        url=f"/api/files/{unique_filename}"
+    )
+    
+    return attachment.model_dump()
+
+@api_router.get("/files/{filename}")
+async def get_file(filename: str):
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path)
+
+@api_router.post("/ideas/{idea_id}/attachments")
+async def add_attachment_to_idea(idea_id: str, attachment_data: Dict[str, Any], 
+                                current_user: User = Depends(get_current_user)):
+    idea = await db.ideas.find_one({"id": idea_id}, {"_id": 0})
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    
+    # Only author can add attachments
+    if idea["author_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    attachment = Attachment(**attachment_data)
+    await db.ideas.update_one(
+        {"id": idea_id},
+        {"$push": {"attachments": attachment.model_dump()}}
+    )
+    
+    return {"success": True}
+
+# Admin Routes
+@api_router.get("/admin/users", response_model=List[User])
+async def get_all_users(admin: User = Depends(get_current_admin)):
+    users = await db.users.find({}, {"_id": 0, "password": 0}).sort("created_at", -1).to_list(1000)
+    return [User(**user) for user in users]
+
+@api_router.put("/admin/users/{user_id}/role")
+async def update_user_role(user_id: str, role: UserRole, admin: User = Depends(get_current_admin)):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"role": role.value}}
+    )
+    
+    # Notify user
+    notification = Notification(
+        user_id=user_id,
+        type="role_change",
+        title="Votre rôle a été modifié",
+        message=f"Votre rôle a été changé en '{role.value}'"
+    )
+    await db.notifications.insert_one(notification.model_dump())
+    
+    return {"success": True}
+
+@api_router.put("/admin/users/{user_id}/ban")
+async def ban_user(user_id: str, banned: bool, admin: User = Depends(get_current_admin)):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Cannot ban admin
+    if user.get("role") == UserRole.ADMIN.value:
+        raise HTTPException(status_code=400, detail="Cannot ban admin user")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"is_banned": banned}}
+    )
+    
+    return {"success": True}
+
+@api_router.get("/admin/stats")
+async def get_admin_stats(admin: User = Depends(get_current_admin)):
+    total_users = await db.users.count_documents({})
+    banned_users = await db.users.count_documents({"is_banned": True})
+    moderators = await db.users.count_documents({"role": {"$in": [UserRole.MODERATOR.value, UserRole.ADMIN.value]}})
+    
+    total_ideas = await db.ideas.count_documents({})
+    reported_ideas = await db.ideas.count_documents({"is_reported": True})
+    
+    total_comments = await db.comments.count_documents({})
+    pending_reports = await db.reports.count_documents({"status": ReportStatus.PENDING.value})
+    
+    # Ideas by status
+    ideas_by_status = {
+        "discussion": await db.ideas.count_documents({"status": IdeaStatus.DISCUSSION.value}),
+        "approved": await db.ideas.count_documents({"status": IdeaStatus.APPROVED.value}),
+        "rejected": await db.ideas.count_documents({"status": IdeaStatus.REJECTED.value}),
+        "in_progress": await db.ideas.count_documents({"status": IdeaStatus.IN_PROGRESS.value}),
+    }
+    
+    return {
+        "users": {
+            "total": total_users,
+            "banned": banned_users,
+            "moderators": moderators
+        },
+        "content": {
+            "ideas": total_ideas,
+            "reported_ideas": reported_ideas,
+            "comments": total_comments,
+            "pending_reports": pending_reports
+        },
+        "ideas_by_status": ideas_by_status
+    }
+
 # Stats Route
 @api_router.get("/stats", response_model=Stats)
 async def get_stats():
