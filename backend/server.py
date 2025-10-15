@@ -154,11 +154,69 @@ class CommentCreate(BaseModel):
 class VoteAction(BaseModel):
     action: str  # "up", "down", or "remove"
 
+class Report(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    content_type: str  # "idea" or "comment"
+    content_id: str
+    reporter_id: str
+    reporter_name: str
+    reason: str
+    description: Optional[str] = None
+    status: ReportStatus = ReportStatus.PENDING
+    reviewed_by: Optional[str] = None
+    resolution: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    reviewed_at: Optional[str] = None
+
+class ReportCreate(BaseModel):
+    content_type: str
+    content_id: str
+    reason: str
+    description: Optional[str] = None
+
+class Notification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    type: str  # "comment", "reply", "vote", "badge", "status_change"
+    title: str
+    message: str
+    link: Optional[str] = None
+    is_read: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Poll(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    options: List[str]
+    votes: Dict[str, int] = {}  # {option: count}
+    user_votes: Dict[str, str] = {}  # {user_id: option}
+    author_id: str
+    author_name: str
+    category_id: Optional[str] = None
+    ends_at: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class PollCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    options: List[str]
+    category_id: Optional[str] = None
+    ends_at: Optional[str] = None
+
+class PollVote(BaseModel):
+    option: str
+
 class Stats(BaseModel):
     participants: int
     proposals: int
     votes: int
     comments: int
+    categories: int
+    polls: int
 
 # Helper functions
 def verify_password(plain_password, hashed_password):
