@@ -34,9 +34,10 @@ export const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-4">
             <Link to="/" className="text-slate-700 hover:text-slate-900 transition-colors">Accueil</Link>
             <Link to="/ideas" className="text-slate-700 hover:text-slate-900 transition-colors">Propositions</Link>
+            <Link to="/polls" className="text-slate-700 hover:text-slate-900 transition-colors">Sondages</Link>
             
             {user ? (
               <>
@@ -47,6 +48,27 @@ export const Header = () => {
                 >
                   Proposer une idée
                 </Button>
+                <NotificationBell />
+                {isModerator() && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/admin/reports')}
+                    title="Modération"
+                  >
+                    <Shield className="h-5 w-5" />
+                  </Button>
+                )}
+                {isAdmin() && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/admin')}
+                    title="Administration"
+                  >
+                    <BarChart3 className="h-5 w-5" />
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="rounded-full h-10 w-10 p-0">
@@ -56,8 +78,20 @@ export const Header = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <div className="px-2 py-1.5 text-sm font-medium">{user.name}</div>
-                    <div className="px-2 py-1.5 text-xs text-slate-500">{user.email}</div>
+                    <div className="px-2 py-1.5">
+                      <div className="text-sm font-medium">{user.name}</div>
+                      <div className="text-xs text-slate-500">{user.email}</div>
+                      {user.role && user.role !== 'user' && (
+                        <div className="text-xs text-blue-600 font-medium capitalize mt-1">
+                          {user.role === 'admin' ? 'Administrateur' : 'Modérateur'}
+                        </div>
+                      )}
+                      {user.badges && user.badges.length > 0 && (
+                        <div className="mt-2">
+                          <BadgeDisplay badges={user.badges} size="sm" />
+                        </div>
+                      )}
+                    </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>Se déconnecter</DropdownMenuItem>
                   </DropdownMenuContent>
