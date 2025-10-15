@@ -515,6 +515,16 @@ async def vote_idea(idea_id: str, vote: VoteAction, current_user: User = Depends
         user_votes[current_user.id] = vote.action
         if vote.action == "up":
             idea["votes_up"] += 1
+            # Notify author of upvote
+            if idea["author_id"] != current_user.id:
+                notification = Notification(
+                    user_id=idea["author_id"],
+                    type="vote",
+                    title="Nouveau vote sur votre proposition",
+                    message=f"{current_user.name} a voté pour votre proposition '{idea['title']}'",
+                    link=f"/ideas/{idea_id}"
+                )
+                await db.notifications.insert_one(notification.model_dump())
         else:
             idea["votes_down"] += 1
     
@@ -527,6 +537,9 @@ async def vote_idea(idea_id: str, vote: VoteAction, current_user: User = Depends
             "user_votes": user_votes
         }}
     )
+    
+    # Check and award badges
+    await check_and_award_badges(current_user.id)
     
     return {"success": True, "votes_up": idea["votes_up"], "votes_down": idea["votes_down"]}
 
