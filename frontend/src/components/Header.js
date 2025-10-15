@@ -116,8 +116,21 @@ export const Header = () => {
           <div className="md:hidden py-4 space-y-2 border-t border-slate-200">
             <Link to="/" className="block py-2 text-slate-700" onClick={() => setMobileMenuOpen(false)}>Accueil</Link>
             <Link to="/ideas" className="block py-2 text-slate-700" onClick={() => setMobileMenuOpen(false)}>Propositions</Link>
+            <Link to="/polls" className="block py-2 text-slate-700" onClick={() => setMobileMenuOpen(false)}>Sondages</Link>
             {user ? (
               <>
+                {isModerator() && (
+                  <Link to="/admin/reports" className="block py-2 text-slate-700" onClick={() => setMobileMenuOpen(false)}>
+                    <Shield className="h-4 w-4 inline mr-2" />
+                    Modération
+                  </Link>
+                )}
+                {isAdmin() && (
+                  <Link to="/admin" className="block py-2 text-slate-700" onClick={() => setMobileMenuOpen(false)}>
+                    <BarChart3 className="h-4 w-4 inline mr-2" />
+                    Administration
+                  </Link>
+                )}
                 <Button 
                   onClick={() => {
                     navigate('/ideas/new');
@@ -131,6 +144,16 @@ export const Header = () => {
                 <div className="pt-2 border-t border-slate-200">
                   <div className="text-sm font-medium">{user.name}</div>
                   <div className="text-xs text-slate-500">{user.email}</div>
+                  {user.role && user.role !== 'user' && (
+                    <div className="text-xs text-blue-600 font-medium capitalize mt-1">
+                      {user.role === 'admin' ? 'Administrateur' : 'Modérateur'}
+                    </div>
+                  )}
+                  {user.badges && user.badges.length > 0 && (
+                    <div className="mt-2">
+                      <BadgeDisplay badges={user.badges} size="sm" />
+                    </div>
+                  )}
                   <Button onClick={handleLogout} variant="ghost" className="w-full mt-2">Se déconnecter</Button>
                 </div>
               </>
