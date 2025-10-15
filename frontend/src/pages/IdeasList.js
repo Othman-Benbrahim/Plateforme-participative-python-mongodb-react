@@ -19,7 +19,7 @@ const IdeasList = () => {
 
   useEffect(() => {
     fetchIdeas();
-  }, [sort]);
+  }, [sort, category, status]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -36,6 +36,8 @@ const IdeasList = () => {
       const params = new URLSearchParams();
       if (sort) params.append('sort', sort);
       if (search) params.append('search', search);
+      if (category) params.append('category', category);
+      if (status) params.append('status', status);
       
       const response = await axios.get(`${API}/ideas?${params.toString()}`);
       setIdeas(response.data);
