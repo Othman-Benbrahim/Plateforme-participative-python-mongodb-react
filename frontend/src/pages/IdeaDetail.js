@@ -26,6 +26,7 @@ const IdeaDetail = () => {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [author, setAuthor] = useState(null);
 
   useEffect(() => {
     fetchData();
