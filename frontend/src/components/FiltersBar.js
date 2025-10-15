@@ -53,12 +53,12 @@ export const FiltersBar = ({ search, onSearch, sort, onSort, category, onCategor
         <div className="flex flex-col md:flex-row gap-4">
           {onCategory && (
             <div className="flex-1">
-              <Select value={category || ''} onValueChange={onCategory}>
+              <Select value={category || 'all'} onValueChange={(val) => onCategory(val === 'all' ? '' : val)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Toutes les catégories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Toutes les catégories</SelectItem>
+                  <SelectItem value="all">Toutes les catégories</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.icon && `${cat.icon} `}{cat.name}
@@ -71,12 +71,12 @@ export const FiltersBar = ({ search, onSearch, sort, onSort, category, onCategor
           
           {onStatus && (
             <div className="flex-1">
-              <Select value={status || ''} onValueChange={onStatus}>
+              <Select value={status || 'all'} onValueChange={(val) => onStatus(val === 'all' ? '' : val)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Tous les statuts" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous les statuts</SelectItem>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
                   <SelectItem value="discussion">💬 Discussion</SelectItem>
                   <SelectItem value="approved">✅ Approuvée</SelectItem>
                   <SelectItem value="in_progress">🚀 En cours</SelectItem>
