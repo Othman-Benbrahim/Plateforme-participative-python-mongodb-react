@@ -3,6 +3,9 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { MessageSquare, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ReportButton } from './ReportButton';
+import { StatusBadge } from './StatusBadge';
+import { SocialShare } from './SocialShare';
 
 export const IdeaCard = ({ idea, onVote, currentUser }) => {
   const navigate = useNavigate();
