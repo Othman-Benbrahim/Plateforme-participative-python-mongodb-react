@@ -937,12 +937,16 @@ async def get_stats():
     votes = sum(idea["votes_up"] + idea["votes_down"] for idea in ideas)
     
     comments = await db.comments.count_documents({})
+    categories = await db.categories.count_documents({})
+    polls = await db.polls.count_documents({})
     
     return Stats(
         participants=participants,
         proposals=proposals,
         votes=votes,
-        comments=comments
+        comments=comments,
+        categories=categories,
+        polls=polls
     )
 
 # Include router
