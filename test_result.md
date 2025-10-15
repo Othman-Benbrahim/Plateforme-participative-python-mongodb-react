@@ -101,3 +101,277 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Je souhaiterais rajouter des fonctionnalités utiles à ce site participatif citoyen."
+
+backend:
+  - task: "Système de rôles utilisateurs (user, moderator, admin)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Ajout des rôles USER, MODERATOR, ADMIN avec helpers get_current_moderator et get_current_admin"
+  
+  - task: "Catégories thématiques pour les idées"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "CRUD catégories avec 8 catégories par défaut créées (Environnement, Transport, Culture, etc.)"
+  
+  - task: "Statuts des propositions (discussion, approved, rejected, in_progress)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Enum IdeaStatus ajouté, les idées peuvent être mises à jour par modérateurs/admins"
+  
+  - task: "Système de signalement (reports)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Routes create_report, get_reports, resolve_report créées. À tester"
+  
+  - task: "Système de notifications"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Notifications pour votes, commentaires, changements de statut. Routes get_notifications, mark_read créées"
+  
+  - task: "Système de badges/récompenses"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Badges: contributor, active_voter, idea_creator, top_contributor. Attribution automatique"
+  
+  - task: "Système de sondages"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "CRUD sondages avec vote. Routes créées"
+  
+  - task: "Upload de fichiers/pièces jointes"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Upload images et PDF (max 10MB), stockage dans /app/backend/uploads/"
+  
+  - task: "Routes d'administration"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "get_all_users, update_user_role, ban_user, get_admin_stats créées"
+
+frontend:
+  - task: "Composant NotificationBell"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/NotificationBell.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Cloche de notifications avec badge count, popover avec liste"
+  
+  - task: "Composant BadgeDisplay"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/BadgeDisplay.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Affichage des badges utilisateur avec tooltips"
+  
+  - task: "Composant ReportButton"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/ReportButton.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Dialog pour signaler idées/commentaires"
+  
+  - task: "Composant StatusBadge"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/StatusBadge.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Badge coloré selon le statut de l'idée"
+  
+  - task: "Composant SocialShare"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/SocialShare.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Partage sur Facebook, Twitter, LinkedIn + copie lien"
+  
+  - task: "Composant PollCard"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/PollCard.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Affichage et vote sur sondages avec progress bars"
+  
+  - task: "Header mis à jour"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/Header.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Ajout notifications, liens Sondages, Admin, Modération, affichage badges"
+  
+  - task: "Page AdminDashboard"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/AdminDashboard.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Dashboard avec stats, gestion utilisateurs, changement rôles, ban"
+  
+  - task: "Page ReportsModeration"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/ReportsModeration.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Interface modération signalements avec tabs, ignorer/supprimer"
+  
+  - task: "Page Polls"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Polls.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Liste sondages + dialog création sondage"
+  
+  - task: "AuthContext mis à jour"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/contexts/AuthContext.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Ajout helpers isAdmin() et isModerator()"
+  
+  - task: "Routes ajoutées dans App.js"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Routes /polls, /admin, /admin/reports ajoutées"
+
+metadata:
+  created_by: "main_agent"
+  version: "2.0"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Tester l'API backend des nouvelles fonctionnalités"
+    - "Tester le frontend complet avec un compte admin"
+  stuck_tasks: []
+  test_all: true
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implémentation complète de toutes les fonctionnalités demandées: 1) Modération et administration (complet) 2) Engagement citoyen (badges, notifications, partage) 3) Organisation des idées (catégories, statuts, signalements, attachements - UI reste à intégrer) 4) Sondages. Backend et frontend de base créés. Prêt pour les tests."
