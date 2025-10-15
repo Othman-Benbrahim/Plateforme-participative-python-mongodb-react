@@ -35,6 +35,8 @@ const NewIdea = () => {
   const [tags, setTags] = useState([]);
   const [customTag, setCustomTag] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   if (!user) {
     navigate('/auth');
