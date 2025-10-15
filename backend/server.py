@@ -926,6 +926,15 @@ async def get_admin_stats(admin: User = Depends(get_current_admin)):
         "ideas_by_status": ideas_by_status
     }
 
+# User Details Route
+@api_router.get("/users/{user_id}", response_model=User)
+async def get_user(user_id: str):
+    """Get public user details"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return User(**user)
+
 # Stats Route
 @api_router.get("/stats", response_model=Stats)
 async def get_stats():
