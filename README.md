@@ -611,6 +611,1000 @@ git subtree push --prefix backend heroku master
 # Build command: yarn build
 # Publish directory: build
 ```
+Excellent ! Je vais créer un guide détaillé pour déployer votre application sur différents services cloud. Voici les meilleures combinaisons :
+Action: file_editor create /app/DEPLOIEMENT_CLOUD.md --file-text "# ☁️ Guide de Déploiement Cloud - Idées Ensemble
+
+Ce guide détaille le déploiement de la plateforme sur différents services cloud gratuits ou peu coûteux.
+
+## 📋 Table des Matières
+
+- [Architecture Cloud Recommandée](#architecture-cloud-recommandée)
+- [Option 1: Vercel + Railway + MongoDB Atlas](#option-1-vercel--railway--mongodb-atlas-recommandé)
+- [Option 2: Netlify + Render + MongoDB Atlas](#option-2-netlify--render--mongodb-atlas)
+- [Option 3: Heroku (Backend + Frontend)](#option-3-heroku-tout-en-un)
+- [Option 4: AWS (EC2 + S3)](#option-4-aws-ec2--s3)
+- [Configuration DNS](#configuration-dns)
+- [Variables d'Environnement](#variables-denvironnement)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## 🏗️ Architecture Cloud Recommandée
+
+```
+┌─────────────────────────────────────────────────────┐
+│                                                       │
+│  FRONTEND (React)                                    │
+│  ├─ Vercel / Netlify / AWS S3 + CloudFront         │
+│  └─ CDN Global                                       │
+│                                                       │
+└──────────────────┬──────────────────────────────────┘
+                   │
+                   │ HTTPS
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│                                                       │
+│  BACKEND (FastAPI)                                   │
+│  ├─ Railway / Render / Heroku                       │
+│  ├─ API REST                                         │
+│  └─ Upload de fichiers                              │
+│                                                       │
+└──────────────────┬──────────────────────────────────┘
+                   │
+                   │ MongoDB Protocol
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│                                                       │
+│  DATABASE (MongoDB)                                  │
+│  ├─ MongoDB Atlas (gratuit 512MB)                   │
+│  ├─ Backups automatiques                            │
+│  └─ Réplication                                      │
+│                                                       │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Option 1: Vercel + Railway + MongoDB Atlas (Recommandé)
+
+### Pourquoi cette combinaison ?
+- ✅ **Gratuit** : Tous les services ont un tier gratuit
+- ✅ **Simple** : Déploiement automatique depuis Git
+- ✅ **Performant** : CDN global pour le frontend
+- ✅ **Scalable** : Peut grandir avec votre projet
+
+---
+
+### Étape 1 : MongoDB Atlas (Base de données)
+
+#### 1.1 Créer un compte MongoDB Atlas
+
+1. Aller sur https://www.mongodb.com/cloud/atlas
+2. Cliquer sur \"Try Free\" ou \"Sign Up\"
+3. Créer un compte avec votre email
+4. Sélectionner \"Shared\" (gratuit)
+
+#### 1.2 Créer un cluster gratuit
+
+```
+1. Sélectionnez un fournisseur cloud :
+   - AWS, Google Cloud ou Azure (tous gratuits)
+   - Région la plus proche de vos utilisateurs
+
+2. Nom du cluster : idees-ensemble-cluster
+3. Cliquer sur \"Create Cluster\" (prend 3-5 minutes)
+```
+
+#### 1.3 Configurer l'accès réseau
+
+```
+1. Dans le menu gauche : \"Network Access\"
+2. Cliquer sur \"Add IP Address\"
+3. Cliquer sur \"Allow Access from Anywhere\" (0.0.0.0/0)
+   ⚠️ Note : En production, restreindre aux IPs de vos services
+4. Cliquer sur \"Confirm\"
+```
+
+#### 1.4 Créer un utilisateur de base de données
+
+```
+1. Dans le menu gauche : \"Database Access\"
+2. Cliquer sur \"Add New Database User\"
+3. Authentication Method : Password
+4. Username : idees_admin
+5. Password : Générer un mot de passe sécurisé (noter le !)
+6. Database User Privileges : \"Read and write to any database\"
+7. Cliquer sur \"Add User\"
+```
+
+#### 1.5 Récupérer la chaîne de connexion
+
+```
+1. Dans le menu gauche : \"Database\" → \"Connect\"
+2. Choisir \"Connect your application\"
+3. Driver : Python / Version : 3.12 or later
+4. Copier la connection string :
+
+mongodb+srv://idees_admin:<password>@idees-ensemble-cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
+
+5. Remplacer <password> par votre vrai mot de passe
+6. Ajouter le nom de la base après .net/ :
+
+mongodb+srv://idees_admin:VOTRE_PASSWORD@idees-ensemble-cluster.xxxxx.mongodb.net/idees_ensemble?retryWrites=true&w=majority
+```
+
+✅ **Sauvegarder cette URL** - vous en aurez besoin !
+
+---
+
+### Étape 2 : Railway (Backend FastAPI)
+
+#### 2.1 Préparer le projet Backend
+
+**Créer `railway.json` dans le dossier backend :**
+```json
+{
+  \"$schema\": \"https://railway.app/railway.schema.json\",
+  \"build\": {
+    \"builder\": \"NIXPACKS\"
+  },
+  \"deploy\": {
+    \"startCommand\": \"uvicorn server:app --host 0.0.0.0 --port $PORT\",
+    \"restartPolicyType\": \"ON_FAILURE\",
+    \"restartPolicyMaxRetries\": 10
+  }
+}
+```
+
+**Créer `nixpacks.toml` dans le dossier backend :**
+```toml
+[phases.setup]
+nixPkgs = ['python39']
+
+[phases.install]
+cmds = ['pip install -r requirements.txt']
+
+[phases.build]
+cmds = ['python seed_categories.py']
+
+[start]
+cmd = 'uvicorn server:app --host 0.0.0.0 --port $PORT'
+```
+
+#### 2.2 Déployer sur Railway
+
+1. **Aller sur https://railway.app**
+2. Cliquer sur \"Start a New Project\"
+3. Se connecter avec GitHub
+4. Cliquer sur \"Deploy from GitHub repo\"
+5. Sélectionner votre repository
+6. Cliquer sur \"Add variables\"
+
+**Variables d'environnement à ajouter :**
+```bash
+MONGO_URL=mongodb+srv://idees_admin:VOTRE_PASSWORD@cluster.xxxxx.mongodb.net/idees_ensemble?retryWrites=true&w=majority
+DB_NAME=idees_ensemble
+JWT_SECRET=GENERER_UN_SECRET_ALEATOIRE_32_CARACTERES
+CORS_ORIGINS=https://votre-app.vercel.app
+PORT=8001
+```
+
+7. Cliquer sur \"Deploy\"
+8. Attendre le déploiement (2-3 minutes)
+9. Copier l'URL générée (ex: `https://idees-ensemble-production.up.railway.app`)
+
+#### 2.3 Configurer le domaine personnalisé (optionnel)
+
+```
+1. Dans Railway : Settings → Domains
+2. Cliquer sur \"Generate Domain\"
+3. Ou ajouter votre propre domaine
+```
+
+✅ **Sauvegarder l'URL du backend** !
+
+---
+
+### Étape 3 : Vercel (Frontend React)
+
+#### 3.1 Préparer le projet Frontend
+
+**Créer `vercel.json` dans le dossier frontend :**
+```json
+{
+  \"version\": 2,
+  \"builds\": [
+    {
+      \"src\": \"package.json\",
+      \"use\": \"@vercel/static-build\",
+      \"config\": {
+        \"distDir\": \"build\"
+      }
+    }
+  ],
+  \"routes\": [
+    {
+      \"src\": \"/static/(.*)\",
+      \"headers\": {
+        \"cache-control\": \"public, max-age=31536000, immutable\"
+      }
+    },
+    {
+      \"src\": \"/(.*)\",
+      \"dest\": \"/index.html\"
+    }
+  ]
+}
+```
+
+**Créer `.vercelignore` dans le dossier frontend :**
+```
+node_modules
+.env.local
+.env
+```
+
+#### 3.2 Déployer sur Vercel
+
+1. **Aller sur https://vercel.com**
+2. Cliquer sur \"Sign Up\" et se connecter avec GitHub
+3. Cliquer sur \"Add New...\" → \"Project\"
+4. Importer votre repository GitHub
+5. Configurer le projet :
+
+```
+Framework Preset : Create React App
+Root Directory : frontend
+Build Command : yarn build
+Output Directory : build
+Install Command : yarn install
+```
+
+6. **Variables d'environnement** (Environment Variables) :
+
+```bash
+REACT_APP_BACKEND_URL=https://votre-backend.up.railway.app
+REACT_APP_ENABLE_VISUAL_EDITS=true
+```
+
+7. Cliquer sur \"Deploy\"
+8. Attendre le déploiement (2-3 minutes)
+9. Votre app sera disponible sur `https://votre-app.vercel.app`
+
+#### 3.3 Configurer le domaine personnalisé
+
+```
+1. Dans Vercel : Settings → Domains
+2. Ajouter votre domaine (ex: idees-ensemble.com)
+3. Suivre les instructions DNS
+4. SSL automatique activé ✅
+```
+
+#### 3.4 Mettre à jour CORS sur Railway
+
+Retourner sur Railway et mettre à jour la variable :
+```bash
+CORS_ORIGINS=https://votre-app.vercel.app,https://votre-domaine.com
+```
+
+---
+
+### Étape 4 : Initialiser la base de données
+
+#### 4.1 Exécuter les scripts d'initialisation
+
+**Via Railway CLI :**
+
+```bash
+# Installer Railway CLI
+npm install -g @railway/cli
+
+# Se connecter
+railway login
+
+# Lier au projet
+railway link
+
+# Exécuter les scripts
+railway run python seed_categories.py
+railway run python create_test_accounts.py
+```
+
+**Ou via MongoDB Compass :**
+
+1. Télécharger MongoDB Compass : https://www.mongodb.com/try/download/compass
+2. Se connecter avec votre URL MongoDB Atlas
+3. Créer manuellement la base `idees_ensemble`
+4. Les collections seront créées automatiquement au premier usage
+
+---
+
+## 🎯 Option 2: Netlify + Render + MongoDB Atlas
+
+### Avantages
+- Interface plus simple que Vercel
+- Render a un bon tier gratuit
+- Bon pour les débutants
+
+### Étape 1 : MongoDB Atlas
+Suivre les mêmes étapes que l'Option 1
+
+### Étape 2 : Render (Backend)
+
+#### 2.1 Créer un compte Render
+
+1. Aller sur https://render.com
+2. Cliquer sur \"Get Started\"
+3. Se connecter avec GitHub
+
+#### 2.2 Créer un Web Service
+
+```
+1. Cliquer sur \"New +\" → \"Web Service\"
+2. Connecter votre repository GitHub
+3. Configuration :
+
+Name : idees-ensemble-backend
+Region : Choisir le plus proche
+Branch : main
+Root Directory : backend
+Runtime : Python 3
+Build Command : pip install -r requirements.txt
+Start Command : uvicorn server:app --host 0.0.0.0 --port $PORT
+```
+
+#### 2.3 Variables d'environnement
+
+```bash
+MONGO_URL=votre_url_mongodb_atlas
+DB_NAME=idees_ensemble
+JWT_SECRET=votre_secret_jwt
+CORS_ORIGINS=https://votre-app.netlify.app
+PORT=10000
+```
+
+4. Sélectionner \"Free\" plan
+5. Cliquer sur \"Create Web Service\"
+6. Copier l'URL générée
+
+### Étape 3 : Netlify (Frontend)
+
+#### 3.1 Créer un compte Netlify
+
+1. Aller sur https://netlify.com
+2. Cliquer sur \"Sign Up\" avec GitHub
+
+#### 3.2 Déployer le site
+
+```
+1. Cliquer sur \"Add new site\" → \"Import an existing project\"
+2. Choisir GitHub
+3. Sélectionner votre repository
+4. Configuration :
+
+Base directory : frontend
+Build command : yarn build
+Publish directory : frontend/build
+```
+
+#### 3.3 Variables d'environnement
+
+```
+Site settings → Build & deploy → Environment
+
+REACT_APP_BACKEND_URL=https://votre-backend.onrender.com
+REACT_APP_ENABLE_VISUAL_EDITS=true
+```
+
+5. Cliquer sur \"Deploy site\"
+6. Votre URL : `https://random-name.netlify.app`
+
+#### 3.4 Domaine personnalisé
+
+```
+Site settings → Domain management → Add custom domain
+```
+
+---
+
+## 🔷 Option 3: Heroku (Tout-en-un)
+
+### Avantages
+- Tout sur une seule plateforme
+- Simple à gérer
+- Bon pour prototypes
+
+### ⚠️ Note : Heroku n'est plus gratuit depuis novembre 2022
+
+**Plan minimum : ~$5/mois par service**
+
+### Étape 1 : Installation CLI
+
+```bash
+# macOS
+brew tap heroku/brew && brew install heroku
+
+# Ubuntu/Debian
+curl https://cli-assets.heroku.com/install.sh | sh
+
+# Windows
+# Télécharger l'installeur : https://cli-assets.heroku.com/heroku-x64.exe
+```
+
+### Étape 2 : Connexion
+
+```bash
+heroku login
+```
+
+### Étape 3 : Déployer le Backend
+
+```bash
+cd backend
+
+# Créer l'app Heroku
+heroku create idees-ensemble-api
+
+# Ajouter MongoDB
+heroku addons:create mongocloud:free
+# OU utiliser MongoDB Atlas
+heroku config:set MONGO_URL=\"votre_url_mongodb_atlas\"
+
+# Variables d'environnement
+heroku config:set JWT_SECRET=$(openssl rand -hex 32)
+heroku config:set CORS_ORIGINS=\"*\"
+
+# Créer Procfile
+echo \"web: uvicorn server:app --host=0.0.0.0 --port=\$PORT\" > Procfile
+
+# Créer runtime.txt
+echo \"python-3.9.16\" > runtime.txt
+
+# Déployer
+git add .
+git commit -m \"Prepare for Heroku\"
+git push heroku main
+
+# Vérifier les logs
+heroku logs --tail
+```
+
+### Étape 4 : Déployer le Frontend
+
+**Option A : Héberger sur Heroku**
+
+```bash
+cd frontend
+
+# Créer l'app
+heroku create idees-ensemble-web
+
+# Ajouter le buildpack Node.js
+heroku buildpacks:set heroku/nodejs
+
+# Variables d'environnement
+heroku config:set REACT_APP_BACKEND_URL=\"https://idees-ensemble-api.herokuapp.com\"
+
+# Créer un fichier static.json (pour SPA routing)
+cat > static.json << EOF
+{
+  \"root\": \"build/\",
+  \"routes\": {
+    \"/**\": \"index.html\"
+  },
+  \"headers\": {
+    \"/**\": {
+      \"Cache-Control\": \"public, max-age=0, must-revalidate\"
+    },
+    \"/static/**\": {
+      \"Cache-Control\": \"public, max-age=31536000, immutable\"
+    }
+  }
+}
+EOF
+
+# Modifier package.json pour ajouter le buildpack
+# Ajouter dans scripts:
+\"heroku-postbuild\": \"yarn build\"
+
+# Déployer
+git add .
+git commit -m \"Prepare frontend for Heroku\"
+git push heroku main
+```
+
+**Option B : Utiliser Vercel/Netlify pour le frontend**
+(Plus économique, suivre Option 1 ou 2)
+
+---
+
+## 🌩️ Option 4: AWS (Pour production à grande échelle)
+
+### Architecture AWS
+
+```
+Frontend : S3 + CloudFront
+Backend : EC2 ou ECS (Docker)
+Database : DocumentDB ou MongoDB Atlas
+Storage : S3 pour les uploads
+```
+
+### Étape 1 : Frontend sur S3 + CloudFront
+
+#### 1.1 Créer un bucket S3
+
+```bash
+# Via AWS CLI
+aws s3 mb s3://idees-ensemble-frontend --region eu-west-1
+
+# Configurer pour hébergement web
+aws s3 website s3://idees-ensemble-frontend \
+  --index-document index.html \
+  --error-document index.html
+```
+
+#### 1.2 Build et Upload
+
+```bash
+cd frontend
+yarn build
+
+# Upload vers S3
+aws s3 sync build/ s3://idees-ensemble-frontend --delete
+```
+
+#### 1.3 Créer une distribution CloudFront
+
+```
+1. Aller sur AWS Console → CloudFront
+2. Create Distribution
+3. Origin : Votre bucket S3
+4. Default Root Object : index.html
+5. Create
+6. Copier le domaine CloudFront
+```
+
+### Étape 2 : Backend sur EC2
+
+#### 2.1 Lancer une instance EC2
+
+```
+1. AWS Console → EC2 → Launch Instance
+2. AMI : Ubuntu Server 22.04 LTS
+3. Instance type : t2.micro (gratuit)
+4. Configure Security Group :
+   - SSH (22) depuis votre IP
+   - HTTP (80) depuis 0.0.0.0/0
+   - HTTPS (443) depuis 0.0.0.0/0
+   - Custom TCP (8001) depuis 0.0.0.0/0
+5. Launch
+```
+
+#### 2.2 Se connecter et installer
+
+```bash
+# Se connecter
+ssh -i votre-cle.pem ubuntu@ec2-ip-address
+
+# Suivre le guide \"Installation Locale\" du README.md principal
+# Puis configurer Nginx comme décrit
+```
+
+### Étape 3 : Base de données
+
+**Option A : MongoDB Atlas** (Recommandé)
+- Suivre l'Étape 1 de l'Option 1
+
+**Option B : Amazon DocumentDB**
+```
+1. AWS Console → DocumentDB
+2. Create cluster
+3. Instance class : db.t3.medium (minimum)
+4. Coût : ~$200/mois
+```
+
+---
+
+## 🌐 Configuration DNS
+
+### Pour un domaine personnalisé
+
+#### Exemple avec Cloudflare (gratuit)
+
+1. **Ajouter votre domaine à Cloudflare**
+   - Créer un compte sur https://cloudflare.com
+   - Ajouter votre domaine
+   - Changer les nameservers chez votre registrar
+
+2. **Configurer les enregistrements DNS**
+
+```
+Type    Name    Content                              Proxy
+CNAME   @       votre-app.vercel.app                 Activé
+CNAME   www     votre-app.vercel.app                 Activé
+CNAME   api     votre-backend.up.railway.app         Activé
+```
+
+3. **Activer SSL/TLS**
+   - SSL/TLS → Overview → Full (strict)
+
+4. **Mettre à jour les services**
+
+**Vercel :**
+```
+Settings → Domains → Add idees-ensemble.com
+```
+
+**Railway :**
+```
+Settings → Domains → Custom Domain → api.idees-ensemble.com
+```
+
+5. **Mettre à jour les variables d'environnement**
+
+```bash
+# Backend (Railway)
+CORS_ORIGINS=https://idees-ensemble.com,https://www.idees-ensemble.com
+
+# Frontend (Vercel)
+REACT_APP_BACKEND_URL=https://api.idees-ensemble.com
+```
+
+---
+
+## 🔐 Variables d'Environnement - Récapitulatif
+
+### Backend (Railway/Render/Heroku)
+
+```bash
+# Base de données MongoDB
+MONGO_URL=mongodb+srv://user:password@cluster.mongodb.net/dbname
+DB_NAME=idees_ensemble
+
+# Sécurité
+JWT_SECRET=votre_secret_jwt_32_caracteres_minimum
+
+# CORS - Autoriser les domaines frontend
+CORS_ORIGINS=https://votre-domaine.com,https://www.votre-domaine.com
+
+# Port (géré automatiquement par la plateforme)
+PORT=$PORT
+```
+
+**Générer un JWT_SECRET sécurisé :**
+```bash
+# En ligne de commande
+openssl rand -hex 32
+
+# Ou en Python
+python -c \"import secrets; print(secrets.token_hex(32))\"
+
+# Ou en Node.js
+node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"
+```
+
+### Frontend (Vercel/Netlify)
+
+```bash
+# URL du backend
+REACT_APP_BACKEND_URL=https://api.votre-domaine.com
+
+# Features (optionnel)
+REACT_APP_ENABLE_VISUAL_EDITS=true
+```
+
+---
+
+## 🔍 Vérification du Déploiement
+
+### Checklist Post-Déploiement
+
+```bash
+# 1. Vérifier le backend
+curl https://votre-backend.com/api/stats
+
+# 2. Vérifier la documentation API
+https://votre-backend.com/docs
+
+# 3. Tester l'authentification
+curl -X POST https://votre-backend.com/api/auth/login \
+  -H \"Content-Type: application/json\" \
+  -d '{\"email\":\"admin@test.fr\",\"password\":\"Admin123!\"}'
+
+# 4. Vérifier le frontend
+https://votre-frontend.com
+
+# 5. Tester le parcours complet
+- Inscription
+- Connexion
+- Créer une idée
+- Voter
+- Upload fichier
+```
+
+---
+
+## 🐛 Troubleshooting Cloud
+
+### Erreur : Cannot connect to MongoDB
+
+**Causes possibles :**
+
+1. **IP non autorisée**
+```
+MongoDB Atlas → Network Access → Add IP Address → 0.0.0.0/0
+```
+
+2. **Mauvaise connection string**
+```
+Vérifier :
+- Le mot de passe (pas de caractères spéciaux encodés)
+- Le nom de la base après .net/
+- Exemple correct :
+mongodb+srv://user:pass@cluster.net/dbname?retryWrites=true
+```
+
+3. **User permissions**
+```
+MongoDB Atlas → Database Access → 
+Vérifier que l'utilisateur a \"Read and write to any database\"
+```
+
+### Erreur CORS sur le frontend
+
+```bash
+# 1. Vérifier la variable CORS_ORIGINS sur le backend
+# 2. S'assurer qu'elle contient l'URL du frontend
+CORS_ORIGINS=https://votre-app.vercel.app
+
+# 3. Redéployer le backend après modification
+```
+
+### Upload de fichiers ne fonctionne pas
+
+**Railway/Render :**
+```
+⚠️ Le système de fichiers est éphémère !
+Les uploads sont perdus au redémarrage.
+
+Solution : Utiliser un service de stockage cloud
+- AWS S3
+- Cloudinary
+- UploadCare
+```
+
+**Migration vers S3 (voir ci-dessous)**
+
+### Backend se met en veille (Free tier)
+
+**Railway :**
+- Free tier : pas de mise en veille
+- ✅ Toujours actif
+
+**Render :**
+- Free tier : se met en veille après 15 minutes d'inactivité
+- Premier appel après veille : ~30 secondes
+- Solution : Upgrade au plan payant ($7/mois)
+
+**Heroku :**
+- Plus de tier gratuit
+- Plan minimum : $5/mois
+
+---
+
+## 📦 Stockage des Fichiers - Migration vers S3
+
+### Configuration AWS S3 pour les uploads
+
+#### 1. Créer un bucket S3
+
+```bash
+# Via AWS Console
+1. S3 → Create bucket
+2. Bucket name : idees-ensemble-uploads
+3. Region : eu-west-1
+4. Block Public Access : Décocher (on gère via CORS)
+5. Create bucket
+```
+
+#### 2. Configurer CORS
+
+```json
+[
+  {
+    \"AllowedHeaders\": [\"*\"],
+    \"AllowedMethods\": [\"GET\", \"PUT\", \"POST\", \"DELETE\"],
+    \"AllowedOrigins\": [\"https://votre-domaine.com\"],
+    \"ExposeHeaders\": [\"ETag\"]
+  }
+]
+```
+
+#### 3. Créer un utilisateur IAM
+
+```
+1. IAM → Users → Add user
+2. Username : idees-uploads-user
+3. Access type : Programmatic access
+4. Permissions : AmazonS3FullAccess
+5. Créer et copier :
+   - Access Key ID
+   - Secret Access Key
+```
+
+#### 4. Modifier le backend
+
+```bash
+# Installer boto3
+pip install boto3
+
+# Ajouter variables d'environnement
+AWS_ACCESS_KEY_ID=votre_access_key
+AWS_SECRET_ACCESS_KEY=votre_secret_key
+AWS_S3_BUCKET_NAME=idees-ensemble-uploads
+AWS_REGION=eu-west-1
+```
+
+#### 5. Mettre à jour server.py
+
+```python
+import boto3
+from botocore.exceptions import ClientError
+
+# Configuration S3
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+    region_name=os.environ.get('AWS_REGION', 'eu-west-1')
+)
+
+BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
+
+@api_router.post(\"/upload\")
+async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    try:
+        # Générer un nom de fichier unique
+        file_ext = file.filename.split('.')[-1]
+        filename = f\"{uuid.uuid4()}.{file_ext}\"
+        
+        # Upload vers S3
+        s3_client.upload_fileobj(
+            file.file,
+            BUCKET_NAME,
+            filename,
+            ExtraArgs={
+                'ContentType': file.content_type,
+                'ACL': 'public-read'
+            }
+        )
+        
+        # URL publique
+        file_url = f\"https://{BUCKET_NAME}.s3.{os.environ.get('AWS_REGION')}.amazonaws.com/{filename}\"
+        
+        attachment = Attachment(
+            filename=file.filename,
+            file_type=file.content_type,
+            file_size=file.size,
+            url=file_url
+        )
+        
+        await db.attachments.insert_one(attachment.model_dump())
+        return attachment
+        
+    except ClientError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+---
+
+## 💰 Coûts Estimés
+
+### Option 1 : Vercel + Railway + MongoDB Atlas
+
+| Service | Tier | Coût |
+|---------|------|------|
+| Vercel (Frontend) | Hobby | Gratuit |
+| Railway (Backend) | Free | Gratuit (500h/mois) |
+| MongoDB Atlas | M0 | Gratuit (512MB) |
+| **Total** | | **0€/mois** |
+
+Limites :
+- Vercel : 100GB bandwidth/mois
+- Railway : 500 heures d'exécution/mois
+- MongoDB : 512MB de stockage
+
+### Option 2 : Netlify + Render + MongoDB Atlas
+
+| Service | Tier | Coût |
+|---------|------|------|
+| Netlify (Frontend) | Free | Gratuit |
+| Render (Backend) | Free | Gratuit |
+| MongoDB Atlas | M0 | Gratuit |
+| **Total** | | **0€/mois** |
+
+Limites :
+- Render : Se met en veille après 15min d'inactivité
+
+### Option 3 : Production (Recommandé pour trafic réel)
+
+| Service | Tier | Coût |
+|---------|------|------|
+| Vercel | Pro | $20/mois |
+| Railway | Starter | $5/mois |
+| MongoDB Atlas | M10 | $57/mois |
+| AWS S3 | Standard | ~$3/mois |
+| **Total** | | **~85€/mois** |
+
+---
+
+## 📊 Monitoring et Analytics
+
+### Vercel Analytics
+
+```
+1. Vercel Dashboard → Analytics
+2. Activer Web Analytics
+3. Voir les métriques en temps réel
+```
+
+### Railway Logs
+
+```bash
+# Voir les logs en temps réel
+railway logs
+
+# Ou dans l'interface web
+Project → Deployments → View Logs
+```
+
+### MongoDB Atlas Monitoring
+
+```
+1. Atlas Dashboard → Metrics
+2. Voir :
+   - Connexions
+   - Operations/seconde
+   - Storage utilisé
+```
+
+---
+
+## 🎯 Conclusion
+
+### Recommandation par cas d'usage
+
+**Prototype / MVP (0€) :**
+```
+✅ Vercel + Railway + MongoDB Atlas
+✅ Déploiement en 30 minutes
+✅ Parfait pour tester
+```
+
+**Production Légère (~20€/mois) :**
+```
+✅ Vercel Pro + Railway Starter + MongoDB Atlas M2
+✅ Support SSL automatique
+✅ Backups automatiques
+```
+
+**Production Scalable (~100€/mois) :**
+```
+✅ AWS (S3 + CloudFront + EC2 + MongoDB Atlas M10)
+✅ Contrôle total
+✅ Peut servir des milliers d'utilisateurs
+```
+
+---
+
+## 📞 Support
+
+Pour des questions spécifiques au déploiement cloud :
+- Vercel : https://vercel.com/docs
+- Railway : https://docs.railway.app
+- Render : https://render.com/docs
+- MongoDB Atlas : https://docs.atlas.mongodb.com
+- Netlify : https://docs.netlify.com
+
 
 ---
 
