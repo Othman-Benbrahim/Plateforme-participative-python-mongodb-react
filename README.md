@@ -1,6 +1,4 @@
-
-Action: file_editor str_replace /app/README.md --old-str "# Here are your Instructions
-" --new-str "# 💡 Idées Ensemble - Plateforme Participative Citoyenne
+ 💡 Idées Ensemble - Plateforme Participative Citoyenne
 
 Une plateforme web moderne permettant aux citoyens de proposer, voter et discuter des idées pour améliorer leur communauté.
 
