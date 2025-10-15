@@ -15,7 +15,7 @@ import {
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, isModerator } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
