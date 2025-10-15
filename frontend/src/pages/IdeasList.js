@@ -82,7 +82,11 @@ const IdeasList = () => {
             search={search} 
             onSearch={setSearch} 
             sort={sort} 
-            onSort={setSort} 
+            onSort={setSort}
+            category={category}
+            onCategory={setCategory}
+            status={status}
+            onStatus={setStatus}
           />
         </motion.div>
 
