@@ -8,6 +8,9 @@ import IdeasList from './pages/IdeasList';
 import IdeaDetail from './pages/IdeaDetail';
 import NewIdea from './pages/NewIdea';
 import Auth from './pages/Auth';
+import Polls from './pages/Polls';
+import AdminDashboard from './pages/AdminDashboard';
+import ReportsModeration from './pages/ReportsModeration';
 
 function App() {
   return (
@@ -21,6 +24,9 @@ function App() {
             <Route path="/ideas/new" element={<NewIdea />} />
             <Route path="/ideas/:id" element={<IdeaDetail />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/polls" element={<Polls />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/reports" element={<ReportsModeration />} />
           </Routes>
           <Toaster position="top-right" />
         </div>
