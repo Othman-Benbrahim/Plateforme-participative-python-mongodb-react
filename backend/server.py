@@ -87,19 +87,43 @@ class Token(BaseModel):
     token_type: str = "bearer"
     user: User
 
+class Category(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Attachment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    filename: str
+    original_filename: str
+    file_type: str
+    file_size: int
+    url: str
+    uploaded_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class Idea(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: str
     tags: List[str] = []
+    category_id: Optional[str] = None
+    category_name: Optional[str] = None
+    status: IdeaStatus = IdeaStatus.DISCUSSION
     author_id: str
     author_name: str
     votes_up: int = 0
     votes_down: int = 0
     user_votes: dict = {}  # {user_id: "up" or "down"}
     comments_count: int = 0
+    attachments: List[Attachment] = []
+    is_reported: bool = False
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
 
 class IdeaCreate(BaseModel):
     title: str
