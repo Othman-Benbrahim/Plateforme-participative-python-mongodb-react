@@ -242,9 +242,58 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         user = await db.users.find_one({"id": user_id}, {"_id": 0})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
+        if user.get("is_banned", False):
+            raise HTTPException(status_code=403, detail="User account is banned")
         return User(**user)
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication")
+
+async def get_current_moderator(current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Moderator access required")
+    return current_user
+
+async def get_current_admin(current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+async def award_badge(user_id: str, badge_type: BadgeType):
+    """Award a badge to a user if they don't already have it"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if user and badge_type.value not in user.get("badges", []):
+        await db.users.update_one(
+            {"id": user_id},
+            {"$push": {"badges": badge_type.value}}
+        )
+        # Create notification
+        notification = Notification(
+            user_id=user_id,
+            type="badge",
+            title="Nouveau badge obtenu!",
+            message=f"Félicitations! Vous avez obtenu le badge '{badge_type.value}'",
+        )
+        await db.notifications.insert_one(notification.model_dump())
+
+async def check_and_award_badges(user_id: str):
+    """Check user activity and award appropriate badges"""
+    # Count user's ideas
+    ideas_count = await db.ideas.count_documents({"author_id": user_id})
+    if ideas_count >= 1:
+        await award_badge(user_id, BadgeType.IDEA_CREATOR)
+    if ideas_count >= 10:
+        await award_badge(user_id, BadgeType.TOP_CONTRIBUTOR)
+    
+    # Count user's votes
+    ideas = await db.ideas.find({}, {"_id": 0, "user_votes": 1}).to_list(10000)
+    votes_count = sum(1 for idea in ideas if user_id in idea.get("user_votes", {}))
+    if votes_count >= 20:
+        await award_badge(user_id, BadgeType.ACTIVE_VOTER)
+    
+    # Count user's comments
+    comments_count = await db.comments.count_documents({"user_id": user_id})
+    if comments_count >= 10:
+        await award_badge(user_id, BadgeType.CONTRIBUTOR)
 
 # Auth Routes
 @api_router.post("/auth/register", response_model=Token)
