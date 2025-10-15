@@ -82,9 +82,27 @@ export const IdeaCard = ({ idea, onVote, currentUser }) => {
               <ArrowDown className="h-4 w-4" />
             </Button>
           </div>
-          <div className="text-slate-500 flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            <span data-testid="idea-card-comment-count" className="text-sm">{idea.comments_count}</span>
+          <div className="flex items-center gap-2">
+            <div className="text-slate-500 flex items-center gap-1">
+              <MessageSquare className="h-4 w-4" />
+              <span data-testid="idea-card-comment-count" className="text-sm">{idea.comments_count}</span>
+            </div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <SocialShare 
+                url={`${window.location.origin}/ideas/${idea.id}`}
+                title={idea.title}
+                size="sm"
+              />
+            </div>
+            {currentUser && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <ReportButton 
+                  contentType="idea" 
+                  contentId={idea.id}
+                  size="sm"
+                />
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
