@@ -7,7 +7,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Upload, FileText, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
