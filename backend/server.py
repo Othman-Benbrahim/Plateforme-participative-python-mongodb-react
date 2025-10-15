@@ -546,6 +546,11 @@ async def vote_idea(idea_id: str, vote: VoteAction, current_user: User = Depends
 # Comments Routes
 @api_router.post("/comments", response_model=Comment)
 async def create_comment(comment_data: CommentCreate, current_user: User = Depends(get_current_user)):
+    # Get idea to notify author
+    idea = await db.ideas.find_one({"id": comment_data.idea_id}, {"_id": 0})
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    
     comment = Comment(
         **comment_data.model_dump(),
         user_id=current_user.id,
@@ -558,6 +563,20 @@ async def create_comment(comment_data: CommentCreate, current_user: User = Depen
         {"id": comment_data.idea_id},
         {"$inc": {"comments_count": 1}}
     )
+    
+    # Notify idea author
+    if idea["author_id"] != current_user.id:
+        notification = Notification(
+            user_id=idea["author_id"],
+            type="comment",
+            title="Nouveau commentaire",
+            message=f"{current_user.name} a commenté votre proposition '{idea['title']}'",
+            link=f"/ideas/{comment_data.idea_id}"
+        )
+        await db.notifications.insert_one(notification.model_dump())
+    
+    # Check and award badges
+    await check_and_award_badges(current_user.id)
     
     return comment
 
