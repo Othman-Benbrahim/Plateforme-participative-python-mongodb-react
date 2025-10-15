@@ -145,12 +145,15 @@ const IdeaDetail = () => {
           >
             <Card>
               <CardContent className="p-6 md:p-8">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {idea.tags.map((tag, idx) => (
-                    <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-800">
-                      {tag}
-                    </Badge>
-                  ))}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {idea.tags.map((tag, idx) => (
+                      <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-800">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  {idea.status && <StatusBadge status={idea.status} />}
                 </div>
 
                 <h1 className="text-3xl md:text-4xl font-semibold mb-4" style={{ fontFamily: 'Space Grotesk' }}>
@@ -161,6 +164,9 @@ const IdeaDetail = () => {
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     <span>{idea.author_name}</span>
+                    {author && author.badges && author.badges.length > 0 && (
+                      <BadgeDisplay badges={author.badges} />
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
@@ -171,6 +177,37 @@ const IdeaDetail = () => {
                 <div className="prose max-w-none mb-8">
                   <p className="text-slate-700 text-base leading-relaxed whitespace-pre-wrap">{idea.description}</p>
                 </div>
+
+                {/* Attachments */}
+                {idea.attachments && idea.attachments.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3">Pièces jointes</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {idea.attachments.map((attachment) => (
+                        <a
+                          key={attachment.id}
+                          href={`${process.env.REACT_APP_BACKEND_URL}${attachment.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="border rounded-lg p-3 hover:bg-slate-50 transition-colors"
+                        >
+                          {attachment.file_type.startsWith('image/') ? (
+                            <img
+                              src={`${process.env.REACT_APP_BACKEND_URL}${attachment.url}`}
+                              alt={attachment.filename}
+                              className="w-full h-32 object-cover rounded mb-2"
+                            />
+                          ) : (
+                            <div className="w-full h-32 bg-slate-100 rounded mb-2 flex items-center justify-center">
+                              <span className="text-4xl">📄</span>
+                            </div>
+                          )}
+                          <p className="text-sm font-medium truncate">{attachment.filename}</p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Vote buttons */}
                 <div className="flex items-center gap-4 py-4 border-t border-slate-200">
@@ -201,6 +238,19 @@ const IdeaDetail = () => {
                     <ArrowDown className="h-5 w-5 mr-2" />
                     Voter contre
                   </Button>
+                  
+                  <div className="ml-auto flex items-center gap-2">
+                    <SocialShare 
+                      url={window.location.href}
+                      title={idea.title}
+                    />
+                    {user && (
+                      <ReportButton 
+                        contentType="idea" 
+                        contentId={idea.id}
+                      />
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
