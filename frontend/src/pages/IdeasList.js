@@ -13,6 +13,8 @@ const IdeasList = () => {
   const [ideas, setIdeas] = useState([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('recent');
+  const [category, setCategory] = useState('');
+  const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
