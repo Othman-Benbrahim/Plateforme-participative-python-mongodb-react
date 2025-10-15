@@ -32,7 +32,10 @@ export const IdeaCard = ({ idea, onVote, currentUser }) => {
       }}
     >
       <CardHeader className="pb-2">
-        <h3 className="font-semibold text-slate-900 text-lg" data-testid="idea-card-title">{idea.title}</h3>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-semibold text-slate-900 text-lg flex-1" data-testid="idea-card-title">{idea.title}</h3>
+          {idea.status && <StatusBadge status={idea.status} />}
+        </div>
         <div className="flex flex-wrap gap-2 mt-2" data-testid="idea-card-tags">
           {idea.tags.map((t, idx) => (
             <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">{t}</Badge>
