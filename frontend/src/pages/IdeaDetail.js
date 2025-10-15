@@ -11,6 +11,10 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { BadgeDisplay } from '../components/BadgeDisplay';
+import { ReportButton } from '../components/ReportButton';
+import { SocialShare } from '../components/SocialShare';
+import { StatusBadge } from '../components/StatusBadge';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
