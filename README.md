@@ -611,8 +611,8 @@ git subtree push --prefix backend heroku master
 # Build command: yarn build
 # Publish directory: build
 ```
-Excellent ! Je vais créer un guide détaillé pour déployer votre application sur différents services cloud. Voici les meilleures combinaisons :
-Action: file_editor create /app/DEPLOIEMENT_CLOUD.md --file-text "# ☁️ Guide de Déploiement Cloud - Idées Ensemble
+
+☁️ Guide de Déploiement Cloud - Idées Ensemble
 
 Ce guide détaille le déploiement de la plateforme sur différents services cloud gratuits ou peu coûteux.
 
