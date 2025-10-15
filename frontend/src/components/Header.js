@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Menu, X, Lightbulb } from 'lucide-react';
+import { Menu, X, Lightbulb, Shield, BarChart3 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationBell } from './NotificationBell';
+import { BadgeDisplay } from './BadgeDisplay';
 import {
   DropdownMenu,
   DropdownMenuContent,
