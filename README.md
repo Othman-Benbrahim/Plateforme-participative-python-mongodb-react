@@ -937,16 +937,6 @@ sudo -u mongodb mongod --repair --dbpath /var/lib/mongodb
 sudo systemctl start mongod
 ```
 
----
-
-## 📞 Support
-
-Pour toute question ou problème:
-- 📧 Email: support@idees-ensemble.com
-- 🐛 Issues: https://github.com/votre-repo/plateforme-participative/issues
-- 📖 Documentation: https://docs.idees-ensemble.com
-
----
 
 ## 📄 Licence
 
