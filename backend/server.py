@@ -129,6 +129,14 @@ class IdeaCreate(BaseModel):
     title: str
     description: str
     tags: List[str] = []
+    category_id: Optional[str] = None
+
+class IdeaUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    tags: Optional[List[str]] = None
+    category_id: Optional[str] = None
+    status: Optional[IdeaStatus] = None
 
 class Comment(BaseModel):
     model_config = ConfigDict(extra="ignore")
