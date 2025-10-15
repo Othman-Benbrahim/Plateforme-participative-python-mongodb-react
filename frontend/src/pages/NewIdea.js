@@ -255,6 +255,64 @@ const NewIdea = () => {
                   )}
                 </div>
 
+                {/* File Upload */}
+                <div>
+                  <Label>Pièces jointes</Label>
+                  <p className="text-sm text-slate-600 mb-3">Ajoutez des images ou documents (max 10MB, formats: PNG, JPG, PDF)</p>
+                  
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-[hsl(var(--primary))] transition-colors">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      multiple
+                      accept="image/png,image/jpeg,image/jpg,application/pdf"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer flex flex-col items-center gap-2"
+                    >
+                      <Upload className="h-8 w-8 text-slate-400" />
+                      <span className="text-sm text-slate-600">
+                        {uploading ? 'Téléchargement en cours...' : 'Cliquez pour télécharger des fichiers'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Attachments list */}
+                  {attachments.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            {attachment.file_type.startsWith('image/') ? (
+                              <ImageIcon className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <FileText className="h-5 w-5 text-red-500" />
+                            )}
+                            <span className="text-sm font-medium">{attachment.filename}</span>
+                            <span className="text-xs text-slate-500">
+                              ({(attachment.file_size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAttachment(attachment.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Submit buttons */}
                 <div className="flex gap-3 pt-4">
                   <Button
