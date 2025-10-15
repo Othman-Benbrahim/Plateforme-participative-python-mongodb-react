@@ -122,7 +122,8 @@ const NewIdea = () => {
       const response = await axios.post(`${API}/ideas`, {
         title: title.trim(),
         description: description.trim(),
-        tags
+        tags,
+        attachments: attachments.map(a => a.id)
       });
       toast.success('Idée publiée avec succès !');
       navigate(`/ideas/${response.data.id}`);
