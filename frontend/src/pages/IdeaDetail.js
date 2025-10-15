@@ -40,6 +40,19 @@ const IdeaDetail = () => {
       ]);
       setIdea(ideaRes.data);
       setComments(commentsRes.data);
+      
+      // Fetch author details
+      if (ideaRes.data.author_id) {
+        try {
+          const token = localStorage.getItem('token');
+          const authorRes = await axios.get(`${API}/users/${ideaRes.data.author_id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          setAuthor(authorRes.data);
+        } catch (err) {
+          console.error('Failed to fetch author:', err);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Erreur lors du chargement');
