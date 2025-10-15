@@ -628,10 +628,10 @@ async def create_report(report_data: ReportCreate, current_user: User = Depends(
     return report
 
 @api_router.get("/reports", response_model=List[Report])
-async def get_reports(status: Optional[ReportStatus] = None, moderator: User = Depends(get_current_moderator)):
+async def get_reports(report_status: Optional[ReportStatus] = None, moderator: User = Depends(get_current_moderator)):
     query = {}
-    if status:
-        query["status"] = status.value
+    if report_status:
+        query["status"] = report_status.value
     
     reports = await db.reports.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return reports
