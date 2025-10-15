@@ -394,7 +394,9 @@ async def create_idea(idea_data: IdeaCreate, current_user: User = Depends(get_cu
     return idea
 
 @api_router.get("/ideas", response_model=List[Idea])
-async def get_ideas(sort: Optional[str] = "recent", search: Optional[str] = None, tag: Optional[str] = None):
+async def get_ideas(sort: Optional[str] = "recent", search: Optional[str] = None, 
+                   tag: Optional[str] = None, category_id: Optional[str] = None,
+                   status: Optional[IdeaStatus] = None):
     query = {}
     if search:
         query["$or"] = [
@@ -403,6 +405,10 @@ async def get_ideas(sort: Optional[str] = "recent", search: Optional[str] = None
         ]
     if tag:
         query["tags"] = tag
+    if category_id:
+        query["category_id"] = category_id
+    if status:
+        query["status"] = status.value
     
     # Sorting
     sort_order = [("created_at", -1)]  # default: recent
