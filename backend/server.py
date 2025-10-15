@@ -407,8 +407,8 @@ async def get_ideas(sort: Optional[str] = "recent", search: Optional[str] = None
         query["tags"] = tag
     if category_id:
         query["category_id"] = category_id
-    if status:
-        query["status"] = status.value
+    if idea_status:
+        query["status"] = idea_status.value
     
     # Sorting
     sort_order = [("created_at", -1)]  # default: recent
